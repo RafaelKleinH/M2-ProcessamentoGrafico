@@ -1,0 +1,5 @@
+g++ -framework Cocoa -framework OpenGL -framework IOKit -o Exemplo1 exemplo_01.c -I include -I/opt/homebrew/include /opt/homebrew/lib/libGlew.a /opt/homebrew/lib/libglfw3.a
+
+./Exemplo1
+
+g++ -framework Cocoa -framework OpenGL -framework IOKit -o Ex2 Ex2.cpp glad.c -I include -I/opt/homebrew/include /opt/homebrew/lib/libGlew.a /opt/homebrew/lib/libglfw3.a -I/opt/homebrew/Cellar/glfw/3.4/include/ 
