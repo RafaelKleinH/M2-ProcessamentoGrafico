@@ -23,71 +23,68 @@ const char *fragmentShaderSource = "#version 410\n"
                                    "	 frag_color = vec4 (color, 1.0);" // objetivo do FS, determinar a cor do fragmento
                                    "}";
 
-const int size = 1080;
+struct Box {
+    GLuint VAO;
+    float r, g, b;
+    bool deleted;
+};
 
-void macOSInit()
-{
+vector<Box> model;
+const int HEIGHT = 800;
+const int WIDTH = 1080;
+const float GRID_COLUMNS = 12;
+const float GRID_LINES = 8;
+const float GRID_COLUMNS_SUM = 2 / GRID_COLUMNS;
+const float GRID_LINES_SUM = 2 / GRID_LINES;
+
+void macOSInit() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 }
 
-float generateRandomNumber()
-{
+float generateRandomNumber() {
     float randomNum = rand() % 101;
     return randomNum / 100;
 }
 
-struct Triangle
-{
-    float x, y, r, g, b;
-};
-
-struct CreateTriangleModel
-{
-    Triangle triangle;
-    GLuint VAO;
-};
-
-vector<CreateTriangleModel> model;
 float cursorX = 0;
 float cursorY = 0;
 
-Triangle generateTriangle(float cursorX, float cursorY)
-{
-    Triangle triangle;
-    triangle.x = cursorX;
-    triangle.y = cursorY;
-    triangle.r = generateRandomNumber();
-    triangle.g = generateRandomNumber();
-    triangle.b = generateRandomNumber();
-    return triangle;
-}
+Box createBox(float x0, float y0, float x1, float y1) {
 
-GLuint createTriangle(float x0, float y0, float x1, float y1, float x2, float y2, Triangle triangle)
-{ //-0.1, -0.1, 0.1, -0.1, 0.0, 0.1
-
-    float oldRange = (1 - 0);
-    float newRange = (1 - (-1));
-    float newValueX = (((triangle.x - 0) * newRange) / oldRange) + (-1);
-    float newValueY = (((triangle.y - 0) * newRange) / oldRange) + (-1);
-
+    float r = generateRandomNumber();
+    float g = generateRandomNumber();
+    float b = generateRandomNumber();
     GLfloat vertices[] = {
-        newValueX + x0, newValueY + y0, 0.0f,
-        newValueX + x1, newValueY + y1, 0.0f,
-        newValueX, newValueY + y2, 0.0f};
+        x0, y0, 0.0,
+        x1, y1, 0.0,
+        x0, y1, 0.0,
+
+        x0, y0, 0.0,
+        x1, y1, 0.0,
+        x1, y0, 0.0};
 
     GLfloat colors[] = {
-        triangle.r,
- triangle.g,
- triangle.b,
-        triangle.r,
- triangle.g,
- triangle.b,
-          triangle.r,
- triangle.g,
- triangle.b,
+        r,
+        g,
+        b,
+        r,
+        g,
+        b,
+        r,
+        g,
+        b,
+        r,
+        g,
+        b,
+        r,
+        g,
+        b,
+        r,
+        g,
+        b,
     };
 
     GLuint VAO, VBO, VBOcolor;
@@ -111,61 +108,122 @@ GLuint createTriangle(float x0, float y0, float x1, float y1, float x2, float y2
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, NULL);
 
-    return VAO;
+    Box box;
+    box.VAO = VAO;
+    box.r = r;
+    box.g = g;
+    box.b = b;
+    box.deleted = false;
+    return box;
+}
+bool pressed = false;
+bool needToDelete = false;
+
+void createModel() {
+    float y0 = -1;
+    float y1 = -1 + GRID_LINES_SUM;
+    for (int y = 0; y < GRID_LINES; y++)
+    {
+        float x0 = -1;
+        float x1 = -1 + GRID_COLUMNS_SUM;
+        for (int x = 0; x < GRID_COLUMNS; x++)
+        {
+            Box box = createBox(x0, y0, x1, y1);
+            model.push_back(box);
+            x0 = x0 + GRID_COLUMNS_SUM;
+            x1 = x1 + GRID_COLUMNS_SUM;
+        }
+        y0 = y0 + GRID_LINES_SUM;
+        y1 = y1 + GRID_LINES_SUM;
+    }
 }
 
-void mouseButtonCallback(GLFWwindow *window, int button, int action, int mods)
-{
+int getModelIndex() {
+    float newValueX = cursorX + 1;
+    float newValueY = cursorY + 1;
+    float a = newValueX / GRID_COLUMNS_SUM;
+    float b = newValueY / GRID_LINES_SUM;
+    float rows = int(b) * GRID_COLUMNS;
+    float item = int(a);
+    int index = rows + item;
+
+    cout << "X: " << cursorX << endl;
+    cout << "Y: " << cursorY << endl;
+    cout << "a: " << a << endl;
+    cout << "b: " << b << endl;
+    cout << "row: " << rows << endl;
+    cout << "item: " << item << endl;
+
+    return index;
+}
+
+void deleteContent() {
+
+    int index = getModelIndex();
+    model[index].deleted = needToDelete;
+ 
+}
+
+void mouseButtonCallback(GLFWwindow *window, int button, int action, int mods) {
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
     {
-        CreateTriangleModel abc;
-        abc.triangle = generateTriangle(cursorX, cursorY);
-        abc.VAO = createTriangle(-0.1, -0.1, 0.1, -0.1, 0.0, 0.1, abc.triangle);
-        model.push_back(abc);
+        pressed = true;
+        needToDelete = true;
+        //    deleteContent();
     }
+
+        if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
+    {
+        pressed = true;
+        needToDelete = false;
+        //    deleteContent();
+    }
+    
+     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
+        pressed = false;
+     }
+
+        if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE) {
+        pressed = false;
+     }
 }
 
-void cursorPositionCallback(GLFWwindow *window, double xPos, double yPos)
-{
-    float oldRange = (size - 0);
-    float newRange = (1 - 0);
-    float newValueX = (((xPos - 0) * newRange) / oldRange) + 0;
-    float newValueY = ((((size - yPos) - 0) * newRange) / oldRange) + 0;
+void cursorPositionCallback(GLFWwindow *window, double xPos, double yPos) {
+    float oldRangeX = (WIDTH - 0);
+    float newRangeX = (1 - (-1));
+    float newValueX = (((xPos - 0) * newRangeX) / oldRangeX) + (-1);
 
-    if (newValueX < 0)
-    {
-        cursorX = 0;
-    }
-    else if (newValueX > size)
-    {
-        cursorX = size;
-    }
-    else
-    {
+    float oldRangeY = (HEIGHT - 0);
+    float newRangeY = (1 - (-1));
+    float newValueY = ((((HEIGHT - yPos) - 0) * newRangeY) / oldRangeY) + (-1);
+
+    if (newValueX < -1) {
+        cursorX = -1; 
+    } else if (newValueX > 1) {
+        cursorX = 1;
+    } else {
         cursorX = newValueX;
     }
 
-    if (newValueY < 0)
-    {
-        cursorY = 0;
-    }
-    else if (newValueY > size)
-    {
-        cursorY = size;
-    }
-    else
-    {
+        if (newValueY < -1) {
+        cursorY = -1; 
+    } else if (newValueY > 1) {
+        cursorY = 1;
+    } else {
         cursorY = newValueY;
+    }
+
+    if (pressed) {
+        deleteContent();
     }
 }
 
-int main()
-{
+int main() {
 
     glfwInit();
     macOSInit();
 
-    GLFWwindow *window = glfwCreateWindow(size, size, "Triangulo 2 o inimigo agora é o mesmo * 5", NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow(WIDTH, HEIGHT, "Triangulo 3 o inimigo agora são as cores", NULL, NULL);
     if (window == NULL)
     {
         fprintf(stderr, "*** ERRO: não foi possível abrir janela com a GLFW\n");
@@ -194,24 +252,24 @@ int main()
     glAttachShader(shaderProgram, fragmentShader);
     glLinkProgram(shaderProgram); // linka o programa pra ele
 
-    // glDeleteShader(vertexShader); // pode deletar pq foi linkado
-    // glDeleteShader(fragmentShader); // pode deletar pq foi linkado
-
     glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
     glfwSwapBuffers(window);
 
-    while (!glfwWindowShouldClose(window))
-    { // Enquanto nao fechar ele fica em um looping
+    createModel();
+
+    while (!glfwWindowShouldClose(window)) { // Enquanto nao fechar ele fica em um looping
 
         glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
         glUseProgram(shaderProgram);
-        for (int i = 0; i < model.size(); i++)
-        {
 
-            glBindVertexArray(model[i].VAO);
-            glDrawArrays(GL_TRIANGLES, 0, 3);
+        for (int i = 0; i < model.size(); i++) {
+
+            if (!model[i].deleted) {
+                glBindVertexArray(model[i].VAO);
+                glDrawArrays(GL_TRIANGLES, 0, 6);
+            }
         }
         glfwSwapBuffers(window);
         glfwPollEvents();
