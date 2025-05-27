@@ -33,8 +33,8 @@ struct Box {
 vector<Box> model;
 const int HEIGHT = 800;
 const int WIDTH = 1080;
-const float GRID_COLUMNS = 16;
-const float GRID_LINES = 12;
+const float GRID_COLUMNS = 5;
+const float GRID_LINES = 4;
 const float GRID_COLUMNS_SUM = 2 / GRID_COLUMNS;
 const float GRID_LINES_SUM = 2 / GRID_LINES;
 const float PROXIMITY = 0.3;
@@ -274,7 +274,7 @@ int main() {
     createModel();
     points = 0;
     reset = false;
-    while (!reset) {
+    while (!reset && !glfwWindowShouldClose(window)) {
 
         glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
